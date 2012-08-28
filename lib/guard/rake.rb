@@ -9,7 +9,9 @@ module Guard
       super
       @options = {
         :run_on_start => true,
-        :run_on_all => true
+        :run_on_all => true,
+        :with_args => false,
+        :default_arg => nil
       }.update(options)
       @task = @options[:task]
     end
@@ -41,19 +43,32 @@ module Guard
 
     if ::Guard::VERSION < "1.1"
       def run_on_change(paths)
-        run_rake_task
+        run_rake_task(paths)
       end
     else
       def run_on_changes(paths)
-        run_rake_task
+        run_rake_task(paths)
       end
     end
 
-
-    def run_rake_task
-      UI.info "running #{@task}"
+    def run_rake_task(args = @options[:default_arg])
       ::Rake::Task.tasks.each { |t| t.reenable }
-      ::Rake::Task[@task].invoke
+      if @options[:with_args]
+        if args.is_a?(Array)
+          args.each do |arg|
+            UI.info "running #{@task} with args: #{arg}"
+            ::Rake::Task[@task].invoke(arg)
+            ::Rake::Task[@task].reenable
+          end
+        elsif args
+          UI.info "running #{@task} with args: #{args}"
+          ::Rake::Task[@task].invoke(*args)
+        else
+          UI.info "skipping #{@task} as no arguments were passed"
+        end
+      else
+        ::Rake::Task[@task].invoke
+      end
     end
   end
 end
