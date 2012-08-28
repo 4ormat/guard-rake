@@ -17,7 +17,10 @@ module Guard
     def start
       UI.info "Starting guard-rake #{@task}"
       ::Rake.application.init
-      ::Rake.application.load_rakefile
+
+      # Important, otherwise tasks get called multiple times if there are multiple guards.
+      ::Rake.application.load_rakefile if ::Rake::Task.tasks.empty? 
+
       run_rake_task if @options[:run_on_start]
       true
     end
